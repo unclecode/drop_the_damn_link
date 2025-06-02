@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Session Organizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="login-container">
+            <h2>AI Chat Organizer</h2>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-control" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter your password">
+            </div>
+            <button class="btn btn-primary" id="login-btn" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+            <div class="form-footer">
+                <p>No account? Just enter any email and password to register</p>
+            </div>
+        </div>
+        
+        <!-- Main App (initially hidden) -->
+        <div id="main-app" style="display: none;">
+            <header>
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <h1>AI Chat Organizer</h1>
+                </div>
+                
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search bookmarks, folders...">
+                </div>
+                
+                <div class="user-actions">
+                    <button class="btn btn-outline" id="user-email-btn">
+                        <i class="fas fa-user"></i> <span id="user-email">user@example.com</span>
+                    </button>
+                    <button class="btn btn-primary" id="add-bookmark-btn">
+                        <i class="fas fa-plus"></i> Add Bookmark
+                    </button>
+                </div>
+            </header>
+            
+            <div class="app-layout">
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Folders</h2>
+                        <button class="action-btn" id="add-folder-btn">
+                            <i class="fas fa-folder-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="folders-container" id="folders-container">
+                        <!-- Folders will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="content">
+                    <div class="content-header">
+                        <div class="header-left">
+                            <div class="folder-breadcrumbs" id="breadcrumbs">
+                                <div class="breadcrumb">
+                                    <a href="#" data-id="root">All Bookmarks</a>
+                                    <i class="fas fa-chevron-right" style="font-size: 12px;"></i>
+                                </div>
+                            </div>
+                            <div class="search-results" id="search-results">Showing <span id="bookmark-count">0</span> bookmarks</div>
+                        </div>
+                        <div class="view-toggle">
+                            <button class="view-btn active" id="card-view-btn" title="Card View">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                            <button class="view-btn" id="table-view-btn" title="Table View">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bookmarks-container" id="bookmarks-container">
+                        <!-- Bookmarks will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Bookmark Modal -->
+    <div class="modal" id="add-bookmark-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="bookmark-modal-title">Add New Bookmark</h3>
+                <button class="action-btn" id="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="bookmark-url">URL *</label>
+                    <input type="url" class="form-control" id="bookmark-url" placeholder="https://example.com" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="bookmark-title">Title</label>
+                    <input type="text" class="form-control" id="bookmark-title" placeholder="Enter bookmark title (optional)">
+                </div>
+                <div class="form-group">
+                    <label for="bookmark-desc">Description</label>
+                    <textarea class="form-control" id="bookmark-desc" rows="3" placeholder="Enter a description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="bookmark-folder">Folder</label>
+                    <select class="form-control" id="bookmark-folder">
+                        <option value="root">No folder</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="bookmark-tags">Tags</label>
+                    <div class="tag-input-container">
+                        <div class="tags-list" id="tags-list"></div>
+                        <div class="tag-input">
+                            <input type="text" id="tag-input" placeholder="Type a tag and press Enter...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancel-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-bookmark">Save Bookmark</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Folder Modal -->
+    <div class="modal" id="add-folder-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="folder-modal-title">Create New Folder</h3>
+                <button class="action-btn" id="close-folder-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="folder-name">Folder Name *</label>
+                    <input type="text" class="form-control" id="folder-name" placeholder="Enter folder name" required>
+                </div>
+                <div class="form-group">
+                    <label for="parent-folder">Parent Folder</label>
+                    <select class="form-control" id="parent-folder">
+                        <option value="root">No parent folder</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancel-folder-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-folder">Create Folder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <script src="strategies.js"></script>
+    <script src="indexing.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
