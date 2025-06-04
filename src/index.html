@@ -84,6 +84,12 @@
                 </div>
                 
                 <div class="user-actions">
+                    <button class="btn btn-outline" id="clustering-toggle" title="Toggle AI auto-clustering">
+                        <i class="fas fa-robot" id="clustering-icon"></i> AI
+                    </button>
+                    <button class="btn btn-outline" id="reset-clustering" title="Reset AI clustering data" style="display: none;">
+                        <i class="fas fa-trash"></i> Reset AI
+                    </button>
                     <button class="btn btn-outline" id="about-btn" title="About this app">
                         <i class="fas fa-info-circle"></i> About
                     </button>
@@ -249,6 +255,7 @@
                         <p>Built with <strong>Crawl4AI</strong> for intelligent metadata extraction, allowing rich search capabilities across title, description, keywords, and content.</p>
                         <p><strong>Features:</strong></p>
                         <ul>
+                            <li>🤖 <strong>AI Auto-Clustering:</strong> Semantic organization using TF-IDF & cosine similarity</li>
                             <li>Automatic metadata fetching with rich preview</li>
                             <li>BM25 search with weighted fields</li>
                             <li>Condensed HackerNews-style UI</li>
@@ -301,6 +308,8 @@
     <script type="module" src="metadata-fetcher.js"></script>
     <script type="module" src="strategies.js"></script>
     <script type="module" src="indexing.js"></script>
+    <script type="module" src="clustering.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
+

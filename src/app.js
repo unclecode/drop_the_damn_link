@@ -1,8 +1,8 @@
-
 // Import all required classes
-import { IndexedDBProvider, NaiveAuthProvider } from './strategies.js';
-import { BM25Search } from './indexing.js';
-import { MetadataFetcher } from './metadata-fetcher.js';
+import { IndexedDBProvider, NaiveAuthProvider } from "./strategies.js";
+import { BM25Search } from "./indexing.js";
+import { MetadataFetcher } from "./metadata-fetcher.js";
+import { BookmarkClusteringEngine } from "./clustering.js";
 
 // =====================
 // APP CORE
@@ -19,15 +19,23 @@ class AIChatOrganizer {
         this.viewMode = "card"; // Default view mode
         this.metadataFetcher = new MetadataFetcher();
         this.metadataStatus = new Map(); // Track metadata fetch status
+        this.clusteringEngine = new BookmarkClusteringEngine(); // Automatic clustering
+        this.useAutoClustering = true; // Enable by default
     }
 
     async init() {
         try {
             // Initialize theme (default to dark)
             this.initTheme();
-            
+
+            // Initialize clustering settings
+            this.initClustering();
+
             // Initialize database
             await this.dataProvider.init();
+
+            // Initialize clustering engine
+            await this.clusteringEngine.initialize();
 
             // Check authentication
             const isAuthenticated = await this.authProvider.isAuthenticated();
@@ -61,7 +69,7 @@ class AIChatOrganizer {
 
             // Render UI
             this.renderFolders(folders);
-            this.renderBookmarks(bookmarks);
+            await this.renderBookmarks(bookmarks);
         } catch (error) {
             this.showNotification("Error loading data: " + error.message, "error");
             console.error(error);
@@ -152,7 +160,7 @@ class AIChatOrganizer {
                 this.addTag();
             }
         });
-        
+
         // URL input - Enter key handler for quick save
         document.getElementById("bookmark-url").addEventListener("keydown", async (e) => {
             if (e.key === "Enter") {
@@ -177,175 +185,334 @@ class AIChatOrganizer {
         document.getElementById("cancel-folder-modal").addEventListener("click", () => {
             this.hideModal("add-folder-modal");
         });
-        
+
         // View toggle handlers
         document.getElementById("card-view-btn").addEventListener("click", () => {
             this.setViewMode("card");
         });
-        
+
         document.getElementById("table-view-btn").addEventListener("click", () => {
             this.setViewMode("table");
         });
-        
+
         // Theme toggle
         document.getElementById("theme-toggle").addEventListener("click", () => {
             this.toggleTheme();
         });
-        
+
+        // Clustering toggle
+        document.getElementById("clustering-toggle").addEventListener("click", () => {
+            this.toggleClustering();
+        });
+
+        // Reset clustering (for development/testing)
+        document.getElementById("reset-clustering").addEventListener("click", async () => {
+            if (confirm("⚠️ This will delete ALL AI clustering data and folders. Are you sure?")) {
+                await this.resetClustering();
+            }
+        });
+
         // About button
         document.getElementById("about-btn").addEventListener("click", () => {
             this.showModal("about-modal");
         });
-        
+
         // Close about modal
         document.getElementById("close-about-modal").addEventListener("click", () => {
             this.hideModal("about-modal");
         });
     }
-    
+
     initTheme() {
         // Get saved theme or default to dark
         const savedTheme = localStorage.getItem("theme") || "dark";
         document.documentElement.setAttribute("data-theme", savedTheme);
         this.updateThemeIcon(savedTheme);
     }
-    
+
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute("data-theme");
         const newTheme = currentTheme === "dark" ? "light" : "dark";
-        
+
         document.documentElement.setAttribute("data-theme", newTheme);
         localStorage.setItem("theme", newTheme);
         this.updateThemeIcon(newTheme);
     }
-    
+
     updateThemeIcon(theme) {
         const icon = document.getElementById("theme-icon");
         if (icon) {
             icon.className = theme === "dark" ? "fas fa-sun" : "fas fa-moon";
         }
     }
-    
+
+    toggleClustering() {
+        this.useAutoClustering = !this.useAutoClustering;
+        localStorage.setItem("useAutoClustering", this.useAutoClustering.toString());
+        this.updateClusteringIcon();
+
+        const status = this.useAutoClustering ? "enabled" : "disabled";
+        this.showNotification(`🤖 AI clustering ${status}`, this.useAutoClustering ? "success" : "info");
+
+        // Show clustering stats if enabled
+        if (this.useAutoClustering && this.clusteringEngine) {
+            const stats = this.clusteringEngine.getStats();
+            setTimeout(() => {
+                this.showNotification(`📁 ${stats.totalFolders} AI folders, ${stats.totalUrls} organized URLs`, "info");
+            }, 2000);
+        }
+    }
+
+    updateClusteringIcon() {
+        const button = document.getElementById("clustering-toggle");
+        const icon = document.getElementById("clustering-icon");
+        const resetButton = document.getElementById("reset-clustering");
+
+        if (button && icon) {
+            if (this.useAutoClustering) {
+                button.classList.remove("btn-outline");
+                button.classList.add("btn-primary");
+                button.title = "AI auto-clustering enabled - Click to disable";
+                icon.className = "fas fa-robot";
+                
+                // Show reset button when clustering is enabled (for development)
+                if (resetButton) {
+                    resetButton.style.display = "inline-flex";
+                }
+            } else {
+                button.classList.remove("btn-primary");
+                button.classList.add("btn-outline");
+                button.title = "AI auto-clustering disabled - Click to enable";
+                icon.className = "far fa-robot";
+                
+                // Hide reset button when clustering is disabled
+                if (resetButton) {
+                    resetButton.style.display = "none";
+                }
+            }
+        }
+    }
+
+    initClustering() {
+        // Get saved clustering preference or default to enabled
+        const savedClustering = localStorage.getItem("useAutoClustering");
+        this.useAutoClustering = savedClustering !== null ? savedClustering === "true" : true;
+        this.updateClusteringIcon();
+    }
+
+    async resetClustering() {
+        try {
+            this.showNotification("🧹 Clearing AI clustering data...", "info");
+            
+            // Reset the clustering engine
+            await this.clusteringEngine.reset();
+            
+            // Delete any auto-generated cluster folders from database
+            const folders = await this.dataProvider.getFolders();
+            const clusterFolders = folders.filter(f => f.isAutoGenerated || f.clusterId);
+            
+            for (const folder of clusterFolders) {
+                // Move bookmarks from cluster folders back to root
+                const bookmarks = await this.dataProvider.getBookmarks(folder.id);
+                for (const bookmark of bookmarks) {
+                    bookmark.folderId = null; // Move to root
+                    bookmark.clustered = false;
+                    bookmark.clusterInfo = null;
+                    await this.dataProvider.saveBookmark(bookmark);
+                }
+                
+                // Delete the cluster folder
+                await this.dataProvider.deleteFolder(folder.id);
+            }
+            
+            // Reload the UI
+            await this.loadData();
+            
+            this.showNotification("✅ AI clustering data cleared successfully!", "success");
+            console.log("🧹 Clustering reset complete - ready for cold start");
+            
+        } catch (error) {
+            console.error("Error resetting clustering:", error);
+            this.showNotification("❌ Failed to reset clustering data", "error");
+        }
+    }
+
     async fetchMetadataForBookmark(bookmark) {
         if (!bookmark.url) return;
-        
+
         try {
             // Update status to processing
-            this.metadataStatus.set(bookmark.id, 'processing');
-            this.updateBookmarkMetadataStatus(bookmark.id, 'processing');
-            
+            this.metadataStatus.set(bookmark.id, "processing");
+            this.updateBookmarkMetadataStatus(bookmark.id, "processing");
+
             // Fetch metadata
             const metadata = await this.metadataFetcher.fetchMetadata(bookmark.url);
-            
+
             if (metadata) {
                 // Update bookmark with metadata in database
                 const updatedBookmark = {
                     ...bookmark,
                     metadata: metadata,
                     metadataFetched: true,
-                    metadataFetchedAt: new Date()
+                    metadataFetchedAt: new Date(),
                 };
-                
+
                 await this.dataProvider.saveBookmark(updatedBookmark);
-                
+
                 // Update search index
                 await this.loadData();
-                
+
                 // Update UI status
-                this.metadataStatus.set(bookmark.id, 'completed');
-                this.updateBookmarkMetadataStatus(bookmark.id, 'completed');
-                
+                this.metadataStatus.set(bookmark.id, "completed");
+                this.updateBookmarkMetadataStatus(bookmark.id, "completed");
+
                 // Quietly update - no notification spam
             } else {
-                throw new Error('No metadata returned');
+                throw new Error("No metadata returned");
             }
-            
         } catch (error) {
-            console.error('Error fetching metadata:', error);
-            this.metadataStatus.set(bookmark.id, 'error');
-            this.updateBookmarkMetadataStatus(bookmark.id, 'error');
+            console.error("Error fetching metadata:", error);
+            this.metadataStatus.set(bookmark.id, "error");
+            this.updateBookmarkMetadataStatus(bookmark.id, "error");
             // Silently fail for automatic fetching
         }
     }
-    
+
     updateBookmarkMetadataStatus(bookmarkId, status) {
         // Update the UI to show metadata fetch status
         const bookmarkCards = document.querySelectorAll(`[data-bookmark-id="${bookmarkId}"]`);
-        bookmarkCards.forEach(card => {
-            const statusIndicator = card.querySelector('.metadata-status');
+        bookmarkCards.forEach((card) => {
+            const statusIndicator = card.querySelector(".metadata-status");
             if (statusIndicator) {
                 statusIndicator.className = `metadata-status ${status}`;
-                
+
                 switch (status) {
-                    case 'queued':
+                    case "queued":
                         statusIndicator.innerHTML = '<i class="fas fa-clock"></i>';
-                        statusIndicator.title = 'Metadata queued for fetching';
+                        statusIndicator.title = "Metadata queued for fetching";
                         break;
-                    case 'processing':
+                    case "processing":
                         statusIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                        statusIndicator.title = 'Fetching metadata...';
+                        statusIndicator.title = "Fetching metadata...";
                         break;
-                    case 'completed':
+                    case "completed":
                         statusIndicator.innerHTML = '<i class="fas fa-check"></i>';
-                        statusIndicator.title = 'Metadata fetched successfully';
+                        statusIndicator.title = "Metadata fetched successfully";
                         break;
-                    case 'error':
+                    case "error":
                         statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-                        statusIndicator.title = 'Failed to fetch metadata';
+                        statusIndicator.title = "Failed to fetch metadata";
                         break;
                 }
             }
         });
     }
-    
+
     async refreshMetadataForBookmark(bookmarkId) {
         try {
             const bookmark = await this.dataProvider.getBookmark(bookmarkId);
             if (bookmark && bookmark.url) {
-                this.showNotification('Refreshing metadata...', 'info');
+                this.showNotification("Refreshing metadata...", "info");
                 await this.fetchMetadataForBookmark(bookmark);
             }
         } catch (error) {
-            console.error('Error refreshing metadata:', error);
-            this.showNotification('Failed to refresh metadata', 'error');
+            console.error("Error refreshing metadata:", error);
+            this.showNotification("Failed to refresh metadata", "error");
         }
     }
 
     async saveBookmark() {
-        const title = document.getElementById("bookmark-title").value;
-        const url = document.getElementById("bookmark-url").value;
-        const description = document.getElementById("bookmark-desc").value;
-        const folderId = document.getElementById("bookmark-folder").value;
+        let title = document.getElementById("bookmark-title").value;
+        let url = document.getElementById("bookmark-url").value;
+        let description = document.getElementById("bookmark-desc").value;
+        let folderId = document.getElementById("bookmark-folder").value;
 
         if (!url) {
             this.showNotification("URL is required", "error");
             return;
         }
-        
+
         // Use URL as title if title is empty
-        const finalTitle = title || new URL(url).hostname || url;
+        let finalTitle = title || new URL(url).hostname || url;
 
         try {
+            let finalFolderId = folderId === "root" ? null : folderId;
+            let clusterInfo = null;
+            let fetchedMetadata = null; // Store metadata for later use
+
+            // Use automatic clustering for new bookmarks if enabled and no manual folder selected
+            if (this.useAutoClustering && !this.editingBookmark && finalFolderId === null) {
+                this.showNotification("🤖 Fetching content for AI organization...", "info");
+
+                // First, fetch metadata to get rich content for clustering
+                let bookmarkWithMetadata = {
+                    title: finalTitle,
+                    url,
+                    description,
+                    tags: this.tags,
+                };
+
+                try {
+                    // Fetch metadata first for better clustering
+                    const metadata = await this.metadataFetcher.fetchMetadata(url);
+                    if (metadata) {
+                        fetchedMetadata = metadata; // Store for later use
+                        bookmarkWithMetadata.metadata = metadata;
+                        // Update title if we got a better one from metadata
+                        if (metadata.title && metadata.title.length > finalTitle.length) {
+                            bookmarkWithMetadata.title = metadata.title;
+                            finalTitle = metadata.title;
+                        }
+                        // Add description from metadata if we don't have one
+                        if (!description && metadata.description) {
+                            bookmarkWithMetadata.description = metadata.description;
+                            description = metadata.description;
+                        }
+                    }
+                } catch (metadataError) {
+                    console.warn("Metadata fetch failed, clustering with basic data:", metadataError);
+                    // Continue with clustering even if metadata fails
+                }
+
+                this.showNotification("🤖 AI is organizing your bookmark...", "info");
+
+                // Now cluster with rich metadata
+                clusterInfo = await this.clusteringEngine.addBookmark(bookmarkWithMetadata);
+
+                if (clusterInfo && clusterInfo.folderId) {
+                    // Create or get the folder in our regular folder system
+                    finalFolderId = await this.ensureClusterFolder(clusterInfo);
+                }
+            }
+
             const bookmark = {
                 id: this.editingBookmark?.id || null,
                 title: finalTitle,
                 url,
                 description,
-                folderId: folderId === "root" ? null : folderId,
+                folderId: finalFolderId,
                 tags: this.tags,
+                metadata: fetchedMetadata || undefined, // Include metadata if fetched during clustering
                 createdAt: this.editingBookmark?.createdAt || new Date(),
-                metadataFetched: false
+                metadataFetched: clusterInfo ? true : false, // Already fetched if clustered
+                clustered: clusterInfo ? true : false,
+                clusterInfo: clusterInfo,
             };
 
             const savedBookmark = await this.dataProvider.saveBookmark(bookmark);
             await this.loadData();
             this.hideModal("add-bookmark-modal");
 
-            const message = this.editingBookmark ? "Bookmark updated successfully!" : "Bookmark added successfully!";
+            let message = this.editingBookmark ? "Bookmark updated successfully!" : "Bookmark added successfully!";
+            if (clusterInfo && clusterInfo.isNewFolder) {
+                message += ` 📁 Created new folder: "${clusterInfo.folderLabel}"`;
+            } else if (clusterInfo) {
+                message += ` 📁 Added to: "${clusterInfo.folderLabel}"`;
+            }
             this.showNotification(message, "success");
 
-            // Fetch metadata for new bookmarks or if explicitly requested
-            if (!this.editingBookmark || !savedBookmark.metadataFetched) {
+            // Fetch metadata for new bookmarks only if not already fetched during clustering
+            if (!this.editingBookmark && !clusterInfo) {
                 this.fetchMetadataForBookmark(savedBookmark);
             }
 
@@ -354,6 +521,56 @@ class AIChatOrganizer {
         } catch (error) {
             this.showNotification("Error saving bookmark: " + error.message, "error");
             console.error(error);
+        }
+    }
+
+    /**
+     * Ensure a cluster folder exists in the regular folder system
+     * Maps clustering engine folders to our database folders
+     */
+    async ensureClusterFolder(clusterInfo) {
+        try {
+            // Check if folder already exists in our system
+            const folders = await this.dataProvider.getFolders();
+            
+            // First check by clusterId, then by name for auto-generated folders
+            let existingFolder = folders.find((f) => f.clusterId === clusterInfo.folderId);
+            
+            if (!existingFolder) {
+                // Check if we already have an auto-generated folder with the same name
+                existingFolder = folders.find((f) => 
+                    f.isAutoGenerated && 
+                    f.name === clusterInfo.folderLabel
+                );
+                
+                if (existingFolder) {
+                    // Update the existing folder's clusterId to match the new cluster
+                    existingFolder.clusterId = clusterInfo.folderId;
+                    await this.dataProvider.saveFolder(existingFolder);
+                    console.log(`📁 Reusing existing folder: ${existingFolder.name} (updated clusterId)`);
+                }
+            }
+
+            if (existingFolder) {
+                return existingFolder.id;
+            }
+
+            // Create new folder in our system
+            const folder = {
+                id: null, // Will be auto-generated
+                name: clusterInfo.folderLabel,
+                parentId: null, // Cluster folders go to root for now
+                clusterId: clusterInfo.folderId, // Link to clustering engine
+                isAutoGenerated: true,
+            };
+
+            const savedFolder = await this.dataProvider.saveFolder(folder);
+            console.log(`📁 Created cluster folder: ${folder.name} (${savedFolder.id})`);
+
+            return savedFolder.id;
+        } catch (error) {
+            console.error("Error ensuring cluster folder:", error);
+            return null;
         }
     }
 
@@ -464,7 +681,7 @@ class AIChatOrganizer {
 
     showModal(modalId) {
         document.getElementById(modalId).classList.add("active");
-        
+
         // Focus on URL field when bookmark modal opens
         if (modalId === "add-bookmark-modal") {
             setTimeout(() => {
@@ -521,7 +738,7 @@ class AIChatOrganizer {
             const bookmarks = await this.dataProvider.getBookmarks(
                 this.currentFolder === "root" ? null : this.currentFolder
             );
-            this.renderBookmarks(bookmarks);
+            await this.renderBookmarks(bookmarks);
             searchResults.innerHTML = `Showing ${bookmarks.length} bookmarks`;
             return;
         }
@@ -532,7 +749,7 @@ class AIChatOrganizer {
             const folders = results.filter((r) => r.type === "folder").map((r) => r.item);
 
             // Render search results
-            this.renderBookmarks(bookmarks);
+            await this.renderBookmarks(bookmarks);
             searchResults.innerHTML = `Found ${results.length} results for "${query}"`;
         } catch (error) {
             console.error("Search error:", error);
@@ -622,14 +839,14 @@ class AIChatOrganizer {
 
     updateFolderSelection() {
         // Remove active class from all folders
-        document.querySelectorAll('.folder').forEach(folder => {
-            folder.classList.remove('active');
+        document.querySelectorAll(".folder").forEach((folder) => {
+            folder.classList.remove("active");
         });
-        
+
         // Add active class to current folder
         const currentFolderEl = document.querySelector(`[data-id="${this.currentFolder}"]`);
-        if (currentFolderEl && currentFolderEl.classList.contains('folder')) {
-            currentFolderEl.classList.add('active');
+        if (currentFolderEl && currentFolderEl.classList.contains("folder")) {
+            currentFolderEl.classList.add("active");
         }
     }
 
@@ -657,7 +874,7 @@ class AIChatOrganizer {
             const bookmarks = await this.dataProvider.getBookmarks(
                 this.currentFolder === "root" ? null : this.currentFolder
             );
-            this.renderBookmarks(bookmarks);
+            await this.renderBookmarks(bookmarks);
             document.getElementById("search-results").innerHTML = `Showing ${bookmarks.length} bookmarks`;
         } catch (error) {
             this.showNotification("Error loading folder content: " + error.message, "error");
@@ -667,19 +884,19 @@ class AIChatOrganizer {
 
     setViewMode(mode) {
         this.viewMode = mode;
-        
+
         // Update button states
         document.getElementById("card-view-btn").classList.toggle("active", mode === "card");
         document.getElementById("table-view-btn").classList.toggle("active", mode === "table");
-        
+
         // Re-render bookmarks in new view
         this.loadFolderContent(this.currentFolder);
     }
 
-    renderBookmarks(bookmarks) {
+    async renderBookmarks(bookmarks) {
         const container = document.getElementById("bookmarks-container");
         container.innerHTML = "";
-        
+
         // Update container class based on view mode
         container.className = `bookmarks-container ${this.viewMode}-view`;
 
@@ -698,28 +915,38 @@ class AIChatOrganizer {
                     `;
             return;
         }
-        
+
+        // Get folders for folder name lookup
+        const folders = await this.dataProvider.getFolders();
+        const folderMap = new Map(folders.map(f => [f.id, f]));
+
         if (this.viewMode === "table") {
-            this.renderTableView(bookmarks);
+            this.renderTableView(bookmarks, folderMap);
         } else {
-            this.renderCardView(bookmarks);
+            this.renderCardView(bookmarks, folderMap);
         }
     }
-    
-    renderCardView(bookmarks) {
+
+    renderCardView(bookmarks, folderMap) {
         const container = document.getElementById("bookmarks-container");
-        
+
         bookmarks.forEach((bookmark) => {
             const metadata = bookmark.metadata || {};
-            const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=16`;
+            const domain = new URL(bookmark.url).hostname;
+            // const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
             const ogImage = metadata.ogImage;
-            const description = metadata.description || bookmark.description || '';
+            const description = metadata.description || bookmark.description || "";
             const siteName = metadata.ogSiteName || new URL(bookmark.url).hostname;
             
+            // Get folder name
+            const folder = bookmark.folderId ? folderMap.get(bookmark.folderId) : null;
+            const folderName = folder ? folder.name : "All Bookmarks";
+
             const card = document.createElement("div");
             card.className = "bookmark-card";
             card.dataset.bookmarkId = bookmark.id;
-            
+
             card.innerHTML = `
                 <div class="bookmark-header">
                     <div class="bookmark-favicon">
@@ -728,9 +955,12 @@ class AIChatOrganizer {
                     <div class="bookmark-info">
                         <div class="bookmark-title">${bookmark.title}</div>
                         <div class="bookmark-site">${siteName}</div>
+                        <div class="bookmark-folder">📁 ${folderName}</div>
                         <a href="${bookmark.url}" target="_blank" class="bookmark-url">${bookmark.url}</a>
                     </div>
-                    <div class="metadata-status ${this.metadataStatus.get(bookmark.id) || (bookmark.metadataFetched ? 'completed' : 'pending')}">
+                    <div class="metadata-status ${
+                        this.metadataStatus.get(bookmark.id) || (bookmark.metadataFetched ? "completed" : "pending")
+                    }">
                         ${this.getMetadataStatusIcon(bookmark)}
                     </div>
                     <div class="bookmark-actions">
@@ -745,18 +975,29 @@ class AIChatOrganizer {
                         </button>
                     </div>
                 </div>
-                ${ogImage ? `<div class="bookmark-image"><img src="${ogImage}" alt="" loading="lazy"></div>` : ''}
+                ${ogImage ? `<div class="bookmark-image"><img src="${ogImage}" alt="" loading="lazy"></div>` : ""}
                 ${description ? `<div class="bookmark-desc">${description}</div>` : ""}
-                ${bookmark.tags && bookmark.tags.length > 0 ? `
+                ${
+                    bookmark.tags && bookmark.tags.length > 0
+                        ? `
                     <div class="bookmark-tags">
                         ${bookmark.tags.map((tag) => `<div class="tag">${tag}</div>`).join("")}
                     </div>
-                ` : ""}
-                ${metadata.keywords && metadata.keywords.length > 0 ? `
+                `
+                        : ""
+                }
+                ${
+                    metadata.keywords && metadata.keywords.length > 0
+                        ? `
                     <div class="bookmark-keywords">
-                        ${metadata.keywords.slice(0, 5).map((keyword) => `<span class="keyword">${keyword}</span>`).join("")}
+                        ${metadata.keywords
+                            .slice(0, 5)
+                            .map((keyword) => `<span class="keyword">${keyword}</span>`)
+                            .join("")}
                     </div>
-                ` : ""}
+                `
+                        : ""
+                }
             `;
             container.appendChild(card);
 
@@ -777,42 +1018,47 @@ class AIChatOrganizer {
             });
         });
     }
-    
+
     getMetadataStatusIcon(bookmark) {
         const status = this.metadataStatus.get(bookmark.id);
-        if (status === 'queued') return '<i class="fas fa-clock"></i>';
-        if (status === 'processing') return '<i class="fas fa-spinner fa-spin"></i>';
-        if (status === 'error') return '<i class="fas fa-exclamation-triangle"></i>';
+        if (status === "queued") return '<i class="fas fa-clock"></i>';
+        if (status === "processing") return '<i class="fas fa-spinner fa-spin"></i>';
+        if (status === "error") return '<i class="fas fa-exclamation-triangle"></i>';
         if (bookmark.metadataFetched) return '<i class="fas fa-check"></i>';
         return '<i class="fas fa-clock"></i>';
     }
-    
-    renderTableView(bookmarks) {
+
+    renderTableView(bookmarks, folderMap) {
         const container = document.getElementById("bookmarks-container");
-        
+
         // Create compact list view (like Gmail/Finder)
         const listView = document.createElement("div");
         listView.className = "bookmarks-list";
-        
+
         bookmarks.forEach((bookmark) => {
             const metadata = bookmark.metadata || {};
-            const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=16`;
-            const description = metadata.description || bookmark.description || '';
             const domain = new URL(bookmark.url).hostname;
+            // const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            const description = metadata.description || bookmark.description || "";
             
+            // Get folder name
+            const folder = bookmark.folderId ? folderMap.get(bookmark.folderId) : null;
+            const folderName = folder ? folder.name : "All Bookmarks";
+
             // Combine tags and keywords
             const allTags = [];
             if (bookmark.tags && bookmark.tags.length > 0) {
-                allTags.push(...bookmark.tags.map(tag => ({ text: tag, type: 'tag' })));
+                allTags.push(...bookmark.tags.map((tag) => ({ text: tag, type: "tag" })));
             }
             if (metadata.keywords && metadata.keywords.length > 0) {
-                allTags.push(...metadata.keywords.slice(0, 4).map(keyword => ({ text: keyword, type: 'keyword' })));
+                allTags.push(...metadata.keywords.slice(0, 4).map((keyword) => ({ text: keyword, type: "keyword" })));
             }
-            
+
             const row = document.createElement("div");
             row.className = "bookmark-row";
             row.dataset.bookmarkId = bookmark.id;
-            
+
             row.innerHTML = `
                 <div class="row-main">
                     <div class="row-left">
@@ -821,21 +1067,33 @@ class AIChatOrganizer {
                             <div class="row-header">
                                 <span class="row-title">${bookmark.title}</span>
                                 <span class="row-domain">${domain}</span>
+                                <span class="row-folder">📁 ${folderName}</span>
                                 <div class="row-status">
-                                    <div class="metadata-status ${this.metadataStatus.get(bookmark.id) || (bookmark.metadataFetched ? 'completed' : 'pending')}">
+                                    <div class="metadata-status ${
+                                        this.metadataStatus.get(bookmark.id) ||
+                                        (bookmark.metadataFetched ? "completed" : "pending")
+                                    }">
                                         ${this.getMetadataStatusIcon(bookmark)}
                                     </div>
                                 </div>
                             </div>
                             <div class="row-meta">
-                                ${description ? `<span class="row-desc">${description.substring(0, 120)}</span>` : ''}
-                                <a href="${bookmark.url}" target="_blank" class="row-url" title="${bookmark.url}">${bookmark.url}</a>
+                                ${description ? `<span class="row-desc">${description.substring(0, 120)}</span>` : ""}
+                                <a href="${bookmark.url}" target="_blank" class="row-url" title="${bookmark.url}">${
+                bookmark.url
+            }</a>
                             </div>
-                            ${allTags.length > 0 ? `
+                            ${
+                                allTags.length > 0
+                                    ? `
                                 <div class="row-tags">
-                                    ${allTags.map(item => `<span class="mini-${item.type}">${item.text}</span>`).join('')}
+                                    ${allTags
+                                        .map((item) => `<span class="mini-${item.type}">${item.text}</span>`)
+                                        .join("")}
                                 </div>
-                            ` : ''}
+                            `
+                                    : ""
+                            }
                         </div>
                     </div>
                     <div class="row-actions">
@@ -851,15 +1109,15 @@ class AIChatOrganizer {
                     </div>
                 </div>
             `;
-            
+
             listView.appendChild(row);
-            
+
             // Refresh metadata button
             row.querySelector(".refresh-metadata").addEventListener("click", (e) => {
                 e.stopPropagation();
                 this.refreshMetadataForBookmark(bookmark.id);
             });
-            
+
             // Edit button
             row.querySelector(".edit-bookmark").addEventListener("click", () => {
                 this.showBookmarkModal(bookmark);
@@ -870,7 +1128,7 @@ class AIChatOrganizer {
                 this.deleteBookmark(bookmark.id);
             });
         });
-        
+
         container.appendChild(listView);
     }
 

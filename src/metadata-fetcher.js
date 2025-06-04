@@ -11,11 +11,12 @@ class MetadataFetcher {
         // Microlink API for rich previews
         this.microlinkAPI = 'https://api.microlink.io';
         
-        // Multiple favicon APIs for fallback
+        // Multiple favicon APIs for fallback - use reliable services first
         this.faviconAPIs = [
-            (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+            (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=16`,
+            (domain) => `https://icon.horse/icon/${domain}`,
             (domain) => `https://favicons.githubusercontent.com/${domain}`,
-            (domain) => `https://icon.horse/icon/${domain}`
+            (domain) => `https://${domain}/favicon.ico`
         ];
     }
 
