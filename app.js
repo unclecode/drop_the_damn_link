@@ -12,10 +12,15 @@ class AIChatOrganizer {
         this.editingFolder = null;
         this.tags = [];
         this.viewMode = "card"; // Default view mode
+        this.metadataFetcher = new MetadataFetcher();
+        this.metadataStatus = new Map(); // Track metadata fetch status
     }
 
     async init() {
         try {
+            // Initialize theme (default to dark)
+            this.initTheme();
+            
             // Initialize database
             await this.dataProvider.init();
 
@@ -176,6 +181,119 @@ class AIChatOrganizer {
         document.getElementById("table-view-btn").addEventListener("click", () => {
             this.setViewMode("table");
         });
+        
+        // Theme toggle
+        document.getElementById("theme-toggle").addEventListener("click", () => {
+            this.toggleTheme();
+        });
+    }
+    
+    initTheme() {
+        // Get saved theme or default to dark
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        this.updateThemeIcon(savedTheme);
+    }
+    
+    toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute("data-theme");
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        
+        document.documentElement.setAttribute("data-theme", newTheme);
+        localStorage.setItem("theme", newTheme);
+        this.updateThemeIcon(newTheme);
+    }
+    
+    updateThemeIcon(theme) {
+        const icon = document.getElementById("theme-icon");
+        if (icon) {
+            icon.className = theme === "dark" ? "fas fa-sun" : "fas fa-moon";
+        }
+    }
+    
+    async fetchMetadataForBookmark(bookmark) {
+        if (!bookmark.url) return;
+        
+        try {
+            // Update status to processing
+            this.metadataStatus.set(bookmark.id, 'processing');
+            this.updateBookmarkMetadataStatus(bookmark.id, 'processing');
+            
+            // Fetch metadata
+            const metadata = await this.metadataFetcher.fetchMetadata(bookmark.url);
+            
+            if (metadata) {
+                // Update bookmark with metadata in database
+                const updatedBookmark = {
+                    ...bookmark,
+                    metadata: metadata,
+                    metadataFetched: true,
+                    metadataFetchedAt: new Date()
+                };
+                
+                await this.dataProvider.saveBookmark(updatedBookmark);
+                
+                // Update search index
+                await this.loadData();
+                
+                // Update UI status
+                this.metadataStatus.set(bookmark.id, 'completed');
+                this.updateBookmarkMetadataStatus(bookmark.id, 'completed');
+                
+                // Quietly update - no notification spam
+            } else {
+                throw new Error('No metadata returned');
+            }
+            
+        } catch (error) {
+            console.error('Error fetching metadata:', error);
+            this.metadataStatus.set(bookmark.id, 'error');
+            this.updateBookmarkMetadataStatus(bookmark.id, 'error');
+            // Silently fail for automatic fetching
+        }
+    }
+    
+    updateBookmarkMetadataStatus(bookmarkId, status) {
+        // Update the UI to show metadata fetch status
+        const bookmarkCards = document.querySelectorAll(`[data-bookmark-id="${bookmarkId}"]`);
+        bookmarkCards.forEach(card => {
+            const statusIndicator = card.querySelector('.metadata-status');
+            if (statusIndicator) {
+                statusIndicator.className = `metadata-status ${status}`;
+                
+                switch (status) {
+                    case 'queued':
+                        statusIndicator.innerHTML = '<i class="fas fa-clock"></i>';
+                        statusIndicator.title = 'Metadata queued for fetching';
+                        break;
+                    case 'processing':
+                        statusIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        statusIndicator.title = 'Fetching metadata...';
+                        break;
+                    case 'completed':
+                        statusIndicator.innerHTML = '<i class="fas fa-check"></i>';
+                        statusIndicator.title = 'Metadata fetched successfully';
+                        break;
+                    case 'error':
+                        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                        statusIndicator.title = 'Failed to fetch metadata';
+                        break;
+                }
+            }
+        });
+    }
+    
+    async refreshMetadataForBookmark(bookmarkId) {
+        try {
+            const bookmark = await this.dataProvider.getBookmark(bookmarkId);
+            if (bookmark && bookmark.url) {
+                this.showNotification('Refreshing metadata...', 'info');
+                await this.fetchMetadataForBookmark(bookmark);
+            }
+        } catch (error) {
+            console.error('Error refreshing metadata:', error);
+            this.showNotification('Failed to refresh metadata', 'error');
+        }
     }
 
     async saveBookmark() {
@@ -201,14 +319,20 @@ class AIChatOrganizer {
                 folderId: folderId === "root" ? null : folderId,
                 tags: this.tags,
                 createdAt: this.editingBookmark?.createdAt || new Date(),
+                metadataFetched: false
             };
 
-            await this.dataProvider.saveBookmark(bookmark);
+            const savedBookmark = await this.dataProvider.saveBookmark(bookmark);
             await this.loadData();
             this.hideModal("add-bookmark-modal");
 
             const message = this.editingBookmark ? "Bookmark updated successfully!" : "Bookmark added successfully!";
             this.showNotification(message, "success");
+
+            // Fetch metadata for new bookmarks or if explicitly requested
+            if (!this.editingBookmark || !savedBookmark.metadataFetched) {
+                this.fetchMetadataForBookmark(savedBookmark);
+            }
 
             // Reset tags
             this.tags = [];
@@ -417,6 +541,7 @@ class AIChatOrganizer {
 
         rootFolder.addEventListener("click", () => {
             this.currentFolder = "root";
+            this.updateFolderSelection();
             this.updateBreadcrumbs();
             this.loadFolderContent();
         });
@@ -449,6 +574,7 @@ class AIChatOrganizer {
                 folderEl.addEventListener("click", (e) => {
                     if (!e.target.closest(".folder-actions")) {
                         this.currentFolder = folder.id;
+                        this.updateFolderSelection();
                         this.updateBreadcrumbs();
                         this.loadFolderContent();
                     }
@@ -477,6 +603,19 @@ class AIChatOrganizer {
 
         // Populate folder dropdowns
         this.populateFolderDropdowns(folders);
+    }
+
+    updateFolderSelection() {
+        // Remove active class from all folders
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.classList.remove('active');
+        });
+        
+        // Add active class to current folder
+        const currentFolderEl = document.querySelector(`[data-id="${this.currentFolder}"]`);
+        if (currentFolderEl && currentFolderEl.classList.contains('folder')) {
+            currentFolderEl.classList.add('active');
+        }
     }
 
     populateFolderDropdowns(folders) {
@@ -556,35 +695,61 @@ class AIChatOrganizer {
         const container = document.getElementById("bookmarks-container");
         
         bookmarks.forEach((bookmark) => {
+            const metadata = bookmark.metadata || {};
+            const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=16`;
+            const ogImage = metadata.ogImage;
+            const description = metadata.description || bookmark.description || '';
+            const siteName = metadata.ogSiteName || new URL(bookmark.url).hostname;
+            
             const card = document.createElement("div");
             card.className = "bookmark-card";
+            card.dataset.bookmarkId = bookmark.id;
+            
             card.innerHTML = `
-                        <div class="bookmark-header">
-                            <div style="flex: 1; min-width: 0;">
-                                <div class="bookmark-title">${bookmark.title}</div>
-                                <a href="${bookmark.url}" target="_blank" class="bookmark-url">${bookmark.url}</a>
-                            </div>
-                            <div class="bookmark-actions" style="flex-shrink: 0;">
-                                <button class="action-btn edit-bookmark" data-id="${bookmark.id}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="action-btn delete-bookmark" data-id="${bookmark.id}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        ${bookmark.description ? `<div class="bookmark-desc">${bookmark.description}</div>` : ""}
-                        ${
-                            bookmark.tags && bookmark.tags.length > 0
-                                ? `
-                            <div class="bookmark-tags">
-                                ${bookmark.tags.map((tag) => `<div class="tag">${tag}</div>`).join("")}
-                            </div>
-                        `
-                                : ""
-                        }
-                    `;
+                <div class="bookmark-header">
+                    <div class="bookmark-favicon">
+                        <img src="${favicon}" alt="" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjQ0NDIiByeD0iMiIvPgo8L3N2Zz4K'">
+                    </div>
+                    <div class="bookmark-info">
+                        <div class="bookmark-title">${bookmark.title}</div>
+                        <div class="bookmark-site">${siteName}</div>
+                        <a href="${bookmark.url}" target="_blank" class="bookmark-url">${bookmark.url}</a>
+                    </div>
+                    <div class="metadata-status ${this.metadataStatus.get(bookmark.id) || (bookmark.metadataFetched ? 'completed' : 'pending')}">
+                        ${this.getMetadataStatusIcon(bookmark)}
+                    </div>
+                    <div class="bookmark-actions">
+                        <button class="action-btn refresh-metadata" data-id="${bookmark.id}" title="Refresh metadata">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <button class="action-btn edit-bookmark" data-id="${bookmark.id}" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete-bookmark" data-id="${bookmark.id}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                ${ogImage ? `<div class="bookmark-image"><img src="${ogImage}" alt="" loading="lazy"></div>` : ''}
+                ${description ? `<div class="bookmark-desc">${description}</div>` : ""}
+                ${bookmark.tags && bookmark.tags.length > 0 ? `
+                    <div class="bookmark-tags">
+                        ${bookmark.tags.map((tag) => `<div class="tag">${tag}</div>`).join("")}
+                    </div>
+                ` : ""}
+                ${metadata.keywords && metadata.keywords.length > 0 ? `
+                    <div class="bookmark-keywords">
+                        ${metadata.keywords.slice(0, 5).map((keyword) => `<span class="keyword">${keyword}</span>`).join("")}
+                    </div>
+                ` : ""}
+            `;
             container.appendChild(card);
+
+            // Refresh metadata button
+            card.querySelector(".refresh-metadata").addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.refreshMetadataForBookmark(bookmark.id);
+            });
 
             // Edit button
             card.querySelector(".edit-bookmark").addEventListener("click", () => {
@@ -598,51 +763,87 @@ class AIChatOrganizer {
         });
     }
     
+    getMetadataStatusIcon(bookmark) {
+        const status = this.metadataStatus.get(bookmark.id);
+        if (status === 'queued') return '<i class="fas fa-clock"></i>';
+        if (status === 'processing') return '<i class="fas fa-spinner fa-spin"></i>';
+        if (status === 'error') return '<i class="fas fa-exclamation-triangle"></i>';
+        if (bookmark.metadataFetched) return '<i class="fas fa-check"></i>';
+        return '<i class="fas fa-clock"></i>';
+    }
+    
     renderTableView(bookmarks) {
         const container = document.getElementById("bookmarks-container");
         
-        const table = document.createElement("table");
-        table.className = "bookmarks-table";
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Bookmark</th>
-                    <th>Description</th>
-                    <th>Tags</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
-        
-        const tbody = table.querySelector("tbody");
+        // Create compact list view (like Gmail/Finder)
+        const listView = document.createElement("div");
+        listView.className = "bookmarks-list";
         
         bookmarks.forEach((bookmark) => {
-            const row = document.createElement("tr");
+            const metadata = bookmark.metadata || {};
+            const favicon = metadata.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=16`;
+            const description = metadata.description || bookmark.description || '';
+            const domain = new URL(bookmark.url).hostname;
+            
+            // Combine tags and keywords
+            const allTags = [];
+            if (bookmark.tags && bookmark.tags.length > 0) {
+                allTags.push(...bookmark.tags.map(tag => ({ text: tag, type: 'tag' })));
+            }
+            if (metadata.keywords && metadata.keywords.length > 0) {
+                allTags.push(...metadata.keywords.slice(0, 4).map(keyword => ({ text: keyword, type: 'keyword' })));
+            }
+            
+            const row = document.createElement("div");
+            row.className = "bookmark-row";
+            row.dataset.bookmarkId = bookmark.id;
+            
             row.innerHTML = `
-                <td class="table-bookmark">
-                    <a href="${bookmark.url}" target="_blank" class="bookmark-link" title="${bookmark.url}">
-                        <div class="bookmark-title">${bookmark.title}</div>
-                        <div class="bookmark-domain">${new URL(bookmark.url).hostname}</div>
-                    </a>
-                </td>
-                <td class="table-desc" title="${bookmark.description || ''}">${bookmark.description || '-'}</td>
-                <td class="table-tags">
-                    ${bookmark.tags && bookmark.tags.length > 0 
-                        ? bookmark.tags.map(tag => `<span class="tag">${tag}</span>`).join('')
-                        : '-'
-                    }
-                </td>
-                <td class="table-actions">
-                    <button class="action-btn edit-bookmark" data-id="${bookmark.id}" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete-bookmark" data-id="${bookmark.id}" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
+                <div class="row-main">
+                    <div class="row-left">
+                        <img src="${favicon}" alt="" class="row-favicon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSIjQ0NDIiByeD0iMiIvPgo8L3N2Zz4K'">
+                        <div class="row-content">
+                            <div class="row-header">
+                                <span class="row-title">${bookmark.title}</span>
+                                <span class="row-domain">${domain}</span>
+                                <div class="row-status">
+                                    <div class="metadata-status ${this.metadataStatus.get(bookmark.id) || (bookmark.metadataFetched ? 'completed' : 'pending')}">
+                                        ${this.getMetadataStatusIcon(bookmark)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row-meta">
+                                ${description ? `<span class="row-desc">${description.substring(0, 120)}</span>` : ''}
+                                <a href="${bookmark.url}" target="_blank" class="row-url" title="${bookmark.url}">${bookmark.url}</a>
+                            </div>
+                            ${allTags.length > 0 ? `
+                                <div class="row-tags">
+                                    ${allTags.map(item => `<span class="mini-${item.type}">${item.text}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="row-actions">
+                        <button class="action-btn refresh-metadata" data-id="${bookmark.id}" title="Refresh metadata">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <button class="action-btn edit-bookmark" data-id="${bookmark.id}" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete-bookmark" data-id="${bookmark.id}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
             `;
-            tbody.appendChild(row);
+            
+            listView.appendChild(row);
+            
+            // Refresh metadata button
+            row.querySelector(".refresh-metadata").addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.refreshMetadataForBookmark(bookmark.id);
+            });
             
             // Edit button
             row.querySelector(".edit-bookmark").addEventListener("click", () => {
@@ -655,7 +856,7 @@ class AIChatOrganizer {
             });
         });
         
-        container.appendChild(table);
+        container.appendChild(listView);
     }
 
     updateBreadcrumbs() {
@@ -672,6 +873,7 @@ class AIChatOrganizer {
         breadcrumbs.querySelector("a").addEventListener("click", (e) => {
             e.preventDefault();
             this.currentFolder = "root";
+            this.updateFolderSelection();
             this.updateBreadcrumbs();
             this.loadFolderContent();
         });

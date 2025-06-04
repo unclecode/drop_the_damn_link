@@ -82,8 +82,63 @@ class BM25Search {
     }
 
     getDocumentText(item) {
-        if (item.type === "bookmark") {
-            return `${item.title} ${item.description || ""} ${(item.tags || []).join(" ")}`;
+        // Check if it's a bookmark (has url property) vs folder (has name property)
+        if (item.url) {
+            // Build weighted document text for better search relevance
+            let docText = "";
+            
+            // Title gets highest weight (repeated 3x)
+            if (item.title) {
+                docText += `${item.title} ${item.title} ${item.title} `;
+            }
+            
+            // Metadata title also gets high weight if different from title
+            if (item.metadata?.title && item.metadata.title !== item.title) {
+                docText += `${item.metadata.title} ${item.metadata.title} `;
+            }
+            
+            // Keywords get high weight (repeated 2x)
+            if (item.metadata?.keywords && Array.isArray(item.metadata.keywords)) {
+                const keywords = item.metadata.keywords.join(" ");
+                docText += `${keywords} ${keywords} `;
+            }
+            
+            // Tags get medium-high weight (repeated 2x)
+            if (item.tags && Array.isArray(item.tags)) {
+                const tags = item.tags.join(" ");
+                docText += `${tags} ${tags} `;
+            }
+            
+            // Description and metadata description get normal weight
+            if (item.description) {
+                docText += `${item.description} `;
+            }
+            if (item.metadata?.description && item.metadata.description !== item.description) {
+                docText += `${item.metadata.description} `;
+            }
+            
+            // OpenGraph data gets normal weight
+            if (item.metadata?.ogTitle && item.metadata.ogTitle !== item.title) {
+                docText += `${item.metadata.ogTitle} `;
+            }
+            if (item.metadata?.ogDescription) {
+                docText += `${item.metadata.ogDescription} `;
+            }
+            
+            // Site name and domain get lower weight
+            if (item.metadata?.ogSiteName) {
+                docText += `${item.metadata.ogSiteName} `;
+            }
+            
+            // URL components for domain matching
+            try {
+                const url = new URL(item.url);
+                docText += `${url.hostname.replace('www.', '')} `;
+            } catch (e) {
+                // Invalid URL, skip
+            }
+            
+            return docText.trim();
         } else {
             return item.name;
         }
@@ -91,8 +146,8 @@ class BM25Search {
 
     getAvgDocLength() {
         const allDocs = [
-            ...this.bookmarks.map((b) => this.tokenize(this.getDocumentText(b))).length,
-            ...this.folders.map((f) => this.tokenize(this.getDocumentText(f))).length,
+            ...this.bookmarks.map((b) => this.tokenize(this.getDocumentText(b)).length),
+            ...this.folders.map((f) => this.tokenize(this.getDocumentText(f)).length),
         ];
 
         const total = allDocs.reduce((sum, len) => sum + len, 0);

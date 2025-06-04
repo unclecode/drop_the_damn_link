@@ -1,31 +1,88 @@
+        /* Font Face Declaration */
+        @font-face {
+            font-family: 'dm';
+            src: url('./fonts/DankMono-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'dm';
+            src: url('./fonts/DankMono-Bold.woff2') format('woff2');
+            font-weight: bold;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'dm';
+            src: url('./fonts/DankMono-Italic.woff2') format('woff2');
+            font-weight: normal;
+            font-style: italic;
+        }
+
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --secondary: #10b981;
-            --light: #f9fafb;
-            --dark: #1f2937;
-            --gray: #6b7280;
-            --light-gray: #e5e7eb;
-            --border: #d1d5db;
-            --danger: #ef4444;
+            --primary: #09b5a5;
+            --primary-dark: #09b5a5;
+            --primary-light: #50ffff;
+            --secondary: #d5cec0;
+            --tertiary: #a3abba;
+            --danger: #ff3c74;
             --success: #22c55e;
-            --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
             --transition: all 0.3s ease;
+        }
+        
+        /* Light theme */
+        :root {
+            --bg-primary: #e4e4e4;
+            --bg-secondary: #f9fafb;
+            --bg-card: #fffff9;
+            --bg-hover: #f3f4f6;
+            --text-primary: #222225;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --border-light: #f3f4f6;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --input-bg: #ffffff;
+            --sidebar-bg: #fffffa;
+            --accent: rgb(243, 128, 245);
+        }
+        
+        /* Dark theme (your favorite colors) */
+        [data-theme="dark"] {
+            --primary: #50ffff;
+            --primary-dark: #09b5a5;
+            --primary-light: #50ffff;
+            --secondary: #d5cec0;
+            --tertiary: #a3abba;
+            --bg-primary: #070708;
+            --bg-secondary: #222225;
+            --bg-card: #222225;
+            --bg-hover: #3f3f44;
+            --text-primary: #e8e9ed;
+            --text-secondary: #a3abba;
+            --border: #3f3f44;
+            --border-light: #4b5563;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6);
+            --input-bg: #3f3f44;
+            --sidebar-bg: #222225;
+            --accent: rgb(243, 128, 245);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: dm, Monaco, 'Courier New', monospace, serif;
         }
 
         body {
-            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-            color: var(--dark);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 8px;
+            line-height: 1.4;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 13px;
         }
 
         .container {
@@ -37,11 +94,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
-            margin-bottom: 20px;
+            padding: 10px 0;
+            margin-bottom: 12px;
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 8px;
         }
 
         .logo {
@@ -78,7 +135,8 @@
             border-radius: 50px;
             border: 1px solid var(--border);
             font-size: 16px;
-            background: white;
+            background: var(--input-bg);
+            color: var(--text-primary);
             box-shadow: var(--card-shadow);
             transition: var(--transition);
         }
@@ -94,13 +152,35 @@
             left: 20px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--gray);
+            color: var(--text-secondary);
         }
 
         .user-actions {
             display: flex;
             gap: 15px;
             align-items: center;
+        }
+        
+        /* Theme toggle button */
+        .theme-toggle {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .btn {
@@ -117,23 +197,25 @@
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: white;
+            background: var(--primary-dark);
+            color: var(--bg-primary);
+            font-weight: bold;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
+            background: var(--primary);
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(80, 255, 255, 0.3);
         }
 
         .btn-outline {
             background: transparent;
             border: 1px solid var(--border);
-            color: var(--dark);
+            color: var(--text-primary);
         }
 
         .btn-outline:hover {
-            background: var(--light-gray);
+            background: var(--bg-hover);
         }
 
         .btn-danger {
@@ -153,7 +235,7 @@
 
         .sidebar {
             width: 280px;
-            background: white;
+            background: var(--sidebar-bg);
             border-radius: 12px;
             padding: 20px;
             box-shadow: var(--card-shadow);
@@ -192,11 +274,11 @@
         }
 
         .folder:hover {
-            background: var(--light-gray);
+            background: var(--bg-hover);
         }
 
         .folder.active {
-            background: #eef2ff;
+            background: var(--bg-hover);
             color: var(--primary);
             font-weight: 500;
         }
@@ -229,7 +311,7 @@
 
         .content {
             flex: 1;
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
             padding: 25px;
             box-shadow: var(--card-shadow);
@@ -256,7 +338,7 @@
         .view-toggle {
             display: flex;
             gap: 5px;
-            background: var(--light);
+            background: var(--bg-hover);
             padding: 4px;
             border-radius: 8px;
         }
@@ -268,16 +350,16 @@
             cursor: pointer;
             border-radius: 6px;
             transition: var(--transition);
-            color: var(--gray);
+            color: var(--text-secondary);
         }
         
         .view-btn:hover {
-            background: white;
+            background: var(--bg-card);
             color: var(--primary);
         }
         
         .view-btn.active {
-            background: white;
+            background: var(--bg-card);
             color: var(--primary);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
@@ -313,7 +395,7 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background: white;
+            background: var(--bg-card);
             box-shadow: var(--card-shadow);
             position: relative;
             overflow: visible;
@@ -336,7 +418,7 @@
         .bookmark-title {
             font-size: 18px;
             font-weight: 600;
-            color: var(--dark);
+            color: var(--text-primary);
         }
 
         .bookmark-url {
@@ -354,7 +436,7 @@
         }
 
         .bookmark-desc {
-            color: var(--gray);
+            color: var(--text-secondary);
             font-size: 15px;
             line-height: 1.5;
             flex: 1;
@@ -367,8 +449,8 @@
         }
 
         .tag {
-            background: #e0f2fe;
-            color: #0c4a6e;
+            background: var(--bg-hover);
+            color: var(--primary);
             padding: 4px 10px;
             border-radius: 50px;
             font-size: 13px;
@@ -393,8 +475,8 @@
             justify-content: center;
             cursor: pointer;
             transition: var(--transition);
-            background: var(--light-gray);
-            color: var(--dark);
+            background: var(--bg-hover);
+            color: var(--text-primary);
             border: none;
             flex-shrink: 0;
         }
@@ -411,20 +493,20 @@
             justify-content: center;
             text-align: center;
             padding: 40px;
-            color: var(--gray);
+            color: var(--text-secondary);
             flex: 1;
         }
 
         .empty-state i {
             font-size: 48px;
             margin-bottom: 20px;
-            color: var(--light-gray);
+            color: var(--border-light);
         }
 
         .empty-state h3 {
             font-size: 20px;
             margin-bottom: 10px;
-            color: var(--dark);
+            color: var(--text-primary);
         }
 
         .empty-state p {
@@ -454,7 +536,7 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
             width: 100%;
             max-width: 500px;
@@ -477,7 +559,7 @@
             align-items: center;
             position: sticky;
             top: 0;
-            background: white;
+            background: var(--bg-card);
             z-index: 10;
         }
 
@@ -498,7 +580,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: var(--dark);
+            color: var(--text-primary);
         }
 
         .form-control {
@@ -507,6 +589,8 @@
             border-radius: 8px;
             border: 1px solid var(--border);
             font-size: 16px;
+            background: var(--input-bg);
+            color: var(--text-primary);
             transition: var(--transition);
         }
 
@@ -548,6 +632,8 @@
             padding: 5px;
             outline: none;
             font-size: 16px;
+            background: transparent;
+            color: var(--text-primary);
         }
 
         .modal-footer {
@@ -558,13 +644,13 @@
             gap: 12px;
             position: sticky;
             bottom: 0;
-            background: white;
+            background: var(--bg-card);
         }
 
         .login-container {
             max-width: 400px;
             margin: 50px auto;
-            background: white;
+            background: var(--bg-card);
             padding: 30px;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
@@ -579,7 +665,7 @@
         .form-footer {
             text-align: center;
             margin-top: 20px;
-            color: var(--gray);
+            color: var(--text-secondary);
         }
 
         .form-footer a {
@@ -593,7 +679,7 @@
 
         .search-results {
             font-size: 14px;
-            color: var(--gray);
+            color: var(--text-secondary);
             margin-top: 10px;
         }
 
@@ -691,14 +777,14 @@
         .bookmarks-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: var(--bg-card);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--card-shadow);
         }
         
         .bookmarks-table thead {
-            background: var(--light);
+            background: var(--bg-hover);
             border-bottom: 2px solid var(--border);
         }
         
@@ -706,7 +792,7 @@
             text-align: left;
             padding: 12px 16px;
             font-weight: 600;
-            color: var(--dark);
+            color: var(--text-primary);
             font-size: 14px;
         }
         
@@ -718,11 +804,11 @@
         
         .bookmarks-table td {
             padding: 12px 16px;
-            border-bottom: 1px solid var(--light-gray);
+            border-bottom: 1px solid var(--border-light);
         }
         
         .bookmarks-table tbody tr:hover {
-            background: #f9fafb;
+            background: var(--bg-hover);
         }
         
         .bookmarks-table tbody tr:last-child td {
@@ -748,7 +834,7 @@
         
         .bookmark-title {
             font-weight: 500;
-            color: var(--dark);
+            color: var(--text-primary);
             font-size: 15px;
             margin-bottom: 4px;
             overflow: hidden;
@@ -758,7 +844,7 @@
         
         .bookmark-domain {
             font-size: 13px;
-            color: var(--gray);
+            color: var(--text-secondary);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -769,7 +855,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            color: var(--gray);
+            color: var(--text-secondary);
         }
         
         .table-tags {
@@ -784,7 +870,7 @@
         
         .table-actions {
             white-space: nowrap;
-            display: flex;
+            /* display: flex; */
             gap: 8px;
             justify-content: flex-start;
         }
@@ -797,9 +883,460 @@
             justify-content: center;
         }
         
+        /* ===========================
+           METADATA FEATURES STYLES 
+           HackerNews-style condensed layout
+           =========================== */
+        
+        /* Bookmark favicon */
+        .bookmark-favicon {
+            flex-shrink: 0;
+            margin-right: 8px;
+        }
+        
+        .bookmark-favicon img,
+        .table-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            vertical-align: middle;
+        }
+        
+        /* Bookmark info section */
+        .bookmark-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .bookmark-site {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+        
+        /* Metadata status indicator */
+        .metadata-status {
+            flex-shrink: 0;
+            margin-right: 8px;
+        }
+        
+        .metadata-status i {
+            font-size: 12px;
+        }
+        
+        .metadata-status.pending {
+            color: var(--text-secondary);
+        }
+        
+        .metadata-status.queued {
+            color: #f59e0b;
+        }
+        
+        .metadata-status.processing {
+            color: #06b6d4;
+        }
+        
+        .metadata-status.completed {
+            color: var(--success);
+        }
+        
+        .metadata-status.error {
+            color: var(--danger);
+        }
+        
+        /* Bookmark image */
+        .bookmark-image {
+            margin: 8px 0;
+        }
+        
+        .bookmark-image img {
+            width: 100%;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+        
+        /* Keywords styling */
+        .bookmark-keywords {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .keyword {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 400;
+        }
+        
+        /* Table view metadata */
+        .bookmark-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bookmark-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .table-keywords {
+            max-width: 150px;
+        }
+        
+        .table-keywords .keyword {
+            margin-right: 4px;
+            margin-bottom: 2px;
+            display: inline-block;
+        }
+        
+        .table-status {
+            text-align: center;
+            width: 40px;
+        }
+        
+        /* Condensed spacing - HackerNews style */
+        .bookmark-card {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+        }
+        
+        .bookmark-title {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        
+        .bookmark-url {
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .bookmark-desc {
+            font-size: 12px;
+            line-height: 1.3;
+            margin-top: 4px;
+            color: var(--text-secondary);
+        }
+        
+        .bookmark-tags {
+            margin-top: 4px;
+            gap: 4px;
+        }
+        
+        .tag {
+            padding: 2px 6px;
+            font-size: 11px;
+            border-radius: 3px;
+        }
+        
+        .action-btn {
+            width: 24px;
+            height: 24px;
+            font-size: 11px;
+        }
+        
+        /* Table condensed styling */
+        .bookmarks-table {
+            font-size: 12px;
+        }
+        
+        .bookmarks-table th,
+        .bookmarks-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .bookmarks-table th {
+            font-weight: 500;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            background: var(--bg-hover);
+        }
+        
+        .bookmarks-table tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        /* Sidebar condensed */
+        .sidebar {
+            padding: 8px;
+        }
+        
+        .folder {
+            padding: 4px 8px;
+            margin-bottom: 2px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .folder.nested {
+            padding-left: 24px; /* Indent nested folders */
+        }
+        
+        .folder i {
+            font-size: 12px;
+            margin-right: 6px;
+        }
+        
+        /* Header condensed */
+        .logo h1 {
+            font-size: 20px;
+        }
+        
+        .logo i {
+            font-size: 20px;
+        }
+        
+        .search-bar input {
+            padding: 8px 16px;
+            padding-left: 36px;
+            font-size: 13px;
+            border-radius: 20px;
+        }
+        
+        .user-info {
+            font-size: 12px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        /* Modal condensed */
+        .modal-header {
+            padding: 12px 16px;
+        }
+        
+        .modal-body {
+            padding: 16px;
+        }
+        
+        .form-control {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        
+        /* ===========================
+           COMPACT LIST VIEW (Table Alternative)
+           Gmail/Finder style
+           =========================== */
+        
+        .bookmarks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: var(--border-light);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .bookmark-row {
+            background: var(--bg-card);
+            /* border-bottom: 1px solid var(--border-light); */
+            transition: background-color 0.1s ease;
+        }
+        
+        .bookmark-row:hover {
+            background: var(--bg-hover);
+        }
+        
+        .bookmark-row:last-child {
+            border-bottom: none;
+        }
+        
+        .row-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .row-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .row-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        
+        .row-content {
+            flex: 1;
+            min-width: 0;
+            line-height: 1.2;
+        }
+        
+        .row-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+        
+        .row-title {
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        
+        .row-domain {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--bg-hover);
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        
+        .row-status {
+            /* margin-left: auto; */
+            flex-shrink: 0;
+        }
+        
+        .row-meta {
+            margin-bottom: 3px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .row-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .row-url {
+            font-size: 10px;
+            color: var(--primary);
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+            display: inline-block;
+        }
+        
+        .row-url:hover {
+            text-decoration: underline;
+        }
+        
+        .row-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-top: 2px;
+        }
+        
+        .mini-tag,
+        .mini-keyword {
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-weight: 400;
+            line-height: 1.2;
+        }
+        
+        .mini-tag {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .mini-keyword {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .row-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        
+        .bookmark-row:hover .row-actions {
+            opacity: 1;
+        }
+        
+        .row-actions .action-btn {
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            border-radius: 3px;
+            padding: 0;
+        }
+        
+        /* Update container for list view */
+        .bookmarks-container.table-view {
+            padding: 0;
+        }
+        
+        .bookmarks-container.table-view .bookmarks-list {
+            margin: 0;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        
+        /* Remove old table styles when using list */
+        .bookmarks-table {
+            display: none;
+        }
+        
         /* Responsive - force card view on mobile */
         @media (max-width: 768px) {
             .view-toggle {
                 display: none;
+            }
+            
+            body {
+                padding: 4px;
+            }
+            
+            .bookmark-card {
+                padding: 6px 8px;
+            }
+            
+            .row-main {
+                padding: 4px 6px;
+            }
+            
+            .row-title {
+                max-width: 200px;
+            }
+            
+            .row-desc {
+                -webkit-line-clamp: 1;
             }
         }

@@ -4,6 +4,7 @@
 class DataProvider {
     async init() {}
     async saveBookmark(bookmark) {}
+    async getBookmark(id) {}
     async getBookmarks() {
         return [];
     }
@@ -37,7 +38,7 @@ class IndexedDBProvider extends DataProvider {
     constructor() {
         super();
         this.dbName = "AIChatOrganizerDB";
-        this.dbVersion = 1;
+        this.dbVersion = 2; // Incremented for metadata support
         this.db = null;
     }
 
@@ -47,12 +48,24 @@ class IndexedDBProvider extends DataProvider {
 
             request.onupgradeneeded = (event) => {
                 const db = request.result;
+                const transaction = event.target.transaction;
 
                 // Create bookmarks store if it doesn't exist
                 if (!db.objectStoreNames.contains("bookmarks")) {
                     const store = db.createObjectStore("bookmarks", { keyPath: "id" });
                     store.createIndex("folderId", "folderId", { unique: false });
                     store.createIndex("createdAt", "createdAt", { unique: false });
+                    store.createIndex("metadataFetched", "metadataFetched", { unique: false });
+                    store.createIndex("url", "url", { unique: false });
+                } else {
+                    // Update existing store with new indices for metadata
+                    const store = transaction.objectStore("bookmarks");
+                    if (!store.indexNames.contains("metadataFetched")) {
+                        store.createIndex("metadataFetched", "metadataFetched", { unique: false });
+                    }
+                    if (!store.indexNames.contains("url")) {
+                        store.createIndex("url", "url", { unique: false });
+                    }
                 }
 
                 // Create folders store if it doesn't exist
@@ -88,6 +101,17 @@ class IndexedDBProvider extends DataProvider {
             const request = store.put(bookmark);
 
             request.onsuccess = () => resolve(bookmark);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async getBookmark(id) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction("bookmarks", "readonly");
+            const store = tx.objectStore("bookmarks");
+            const request = store.get(id);
+
+            request.onsuccess = (e) => resolve(e.target.result);
             request.onerror = (e) => reject(e.target.error);
         });
     }
