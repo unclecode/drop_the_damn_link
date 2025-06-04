@@ -701,16 +701,21 @@ class OnboardingManager {
     complete() {
         this.isActive = false;
         
+        // Clean up any remaining tooltips and highlights
+        this.removeCurrentTooltip();
+        
         // Mark onboarding as completed
         localStorage.setItem('onboarding_completed', 'true');
         
         // Animate out and remove overlay
-        this.overlay.classList.remove('active');
-        setTimeout(() => {
-            if (this.overlay && this.overlay.parentNode) {
-                this.overlay.parentNode.removeChild(this.overlay);
-            }
-        }, 300);
+        if (this.overlay) {
+            this.overlay.classList.remove('active');
+            setTimeout(() => {
+                if (this.overlay && this.overlay.parentNode) {
+                    this.overlay.parentNode.removeChild(this.overlay);
+                }
+            }, 300);
+        }
         
         // Show completion notification
         this.app.showNotification('Welcome aboard! Start dropping those links! 🚀', 'success');
