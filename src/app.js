@@ -1,4 +1,9 @@
 
+// Import all required classes
+import { IndexedDBProvider, NaiveAuthProvider } from './strategies.js';
+import { BM25Search } from './indexing.js';
+import { MetadataFetcher } from './metadata-fetcher.js';
+
 // =====================
 // APP CORE
 // =====================

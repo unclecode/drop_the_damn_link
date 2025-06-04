@@ -1,0 +1,26 @@
+{
+  "name": "bookmark",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unclecode/drop_the_damn_link.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/unclecode/drop_the_damn_link/issues"
+  },
+  "homepage": "https://github.com/unclecode/drop_the_damn_link#readme",
+  "description": "",
+  "devDependencies": {
+    "terser": "^5.40.0",
+    "vite": "^6.3.5"
+  }
+}

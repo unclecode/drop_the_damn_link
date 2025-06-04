@@ -211,3 +211,6 @@ class NaiveAuthProvider extends AuthProvider {
         return localStorage.getItem("auth_authenticated") === "true";
     }
 }
+
+// Export classes for ES modules
+export { DataProvider, AuthProvider, IndexedDBProvider, NaiveAuthProvider };

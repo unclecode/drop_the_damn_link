@@ -828,5 +828,8 @@ if (typeof window !== 'undefined') {
     
 }
 
+// Export for ES modules
+export { MetadataFetcher };
+
 // console.log('✅ MetadataFetcher loaded!');
 // console.log('Test with: testMetadataFetcher("https://example.com")');

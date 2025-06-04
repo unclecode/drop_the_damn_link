@@ -175,3 +175,6 @@ class BM25Search {
         return Math.log(1 + (totalDocs - docCount + 0.5) / (docCount + 0.5));
     }
 }
+
+// Export for ES modules
+export { BM25Search };
