@@ -191,6 +191,16 @@ class AIChatOrganizer {
         document.getElementById("theme-toggle").addEventListener("click", () => {
             this.toggleTheme();
         });
+        
+        // About button
+        document.getElementById("about-btn").addEventListener("click", () => {
+            this.showModal("about-modal");
+        });
+        
+        // Close about modal
+        document.getElementById("close-about-modal").addEventListener("click", () => {
+            this.hideModal("about-modal");
+        });
     }
     
     initTheme() {

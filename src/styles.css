@@ -648,18 +648,141 @@
         }
 
         .login-container {
-            max-width: 400px;
-            margin: 50px auto;
+            max-width: 600px;
+            margin: 30px auto;
             background: var(--bg-card);
             padding: 30px;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
         }
 
-        .login-container h2 {
+        /* ASCII Logo */
+        .ascii-logo {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .ascii-logo pre {
+            font-family: dm, Monaco, 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1;
             color: var(--primary);
+            margin: 0;
+            font-weight: bold;
+        }
+        
+        .app-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 15px 0 25px 0;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        /* Author Info Section */
+        .author-info {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .author-avatar {
+            flex-shrink: 0;
+        }
+        
+        .author-avatar .avatar-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+        
+        .author-details {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .author-details p {
+            margin: 0 0 8px 0;
+        }
+        
+        .author-details strong {
+            color: var(--primary);
+        }
+        
+        .author-details a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .author-details a:hover {
+            text-decoration: underline;
+        }
+        
+        .tagline {
+            font-style: italic;
+            color: var(--text-secondary);
+            margin: 8px 0 !important;
+        }
+        
+        .author-links {
+            display: flex;
+            gap: 12px;
+            margin: 10px 0;
+        }
+        
+        .author-links a {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            font-size: 11px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+        
+        .author-links a:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .tech-info {
+            font-size: 11px !important;
+            color: var(--text-secondary) !important;
+            margin-top: 10px !important;
+        }
+        
+        .tech-info strong {
+            color: var(--primary) !important;
+        }
+        
+        .tech-info small {
+            opacity: 0.8;
+        }
+        
+        /* Login Form */
+        .login-form {
+            border-top: 1px solid var(--border);
+            padding-top: 25px;
+        }
+        
+        .login-form h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: var(--text-primary);
         }
 
         .form-footer {
@@ -1314,6 +1437,111 @@
             display: none;
         }
         
+        /* About Modal Styles */
+        .about-modal-content {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .author-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .author-info-modal h4 {
+            margin: 0 0 8px 0;
+            color: var(--primary);
+            font-size: 18px;
+        }
+        
+        .author-info-modal p {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .app-philosophy,
+        .tech-details,
+        .project-links {
+            margin-bottom: 25px;
+        }
+        
+        .app-philosophy h4,
+        .tech-details h4,
+        .project-links h4 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .app-philosophy p,
+        .tech-details p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        .tech-details ul {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+        
+        .tech-details li {
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+        
+        .project-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+        
+        .project-link:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+        
+        .project-link i {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .project-link div {
+            flex: 1;
+        }
+        
+        .project-link strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .project-link span {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
         /* Responsive - force card view on mobile */
         @media (max-width: 768px) {
             .view-toggle {
@@ -1338,5 +1566,14 @@
             
             .row-desc {
                 -webkit-line-clamp: 1;
+            }
+            
+            .author-section {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .link-grid {
+                grid-template-columns: 1fr;
             }
         }

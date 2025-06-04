@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Session Organizer</title>
+    <title>Drop the Damn Link! - AI Bookmark Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,7 +11,48 @@
     <div class="container">
         <!-- Login Screen -->
         <div id="login-screen" class="login-container">
-            <h2>AI Chat Organizer</h2>
+            <!-- About Section for Login -->
+            <div class="login-about">
+                <div class="ascii-logo" style="display: none;">
+                    <pre>
+    ╔═╗╦═╗╔═╗╔═╗  ╔╦╗╦ ╦╔═╗  ╔╦╗╔═╗╔╦╗╔╗╔  ╦  ╦╔╗╔╦╔═
+    ║  ╠╦╝║ ║╠═╝   ║ ╠═╣║╣    ║║╠═╣║║║║║║  ║  ║║║║╠╩╗
+    ╚═╝╩╚═╚═╝╩     ╩ ╩ ╩╚═╝  ═╩╝╩ ╩╩ ╩╝╚╝  ╩═╝╩╝╚╝╩ ╩
+                    </pre>
+                </div>
+                <h1 class="app-title">Drop the Damn Link!</h1>
+                
+                <div class="author-info">
+                    <div class="author-avatar">
+                        <img src="https://github.com/unclecode.png" alt="Unclecode" class="avatar-img">
+                    </div>
+                    <div class="author-details">
+                        <p><strong>Unclecode</strong> • Author of <a href="https://github.com/unclecode/crawl4ai" target="_blank">Crawl4AI</a> ⭐ 44.9k</p>
+                        <p class="tagline">AI-assisted bookmark manager. Philosophy: <em>"Drop the damn link, let AI organize it!"</em></p>
+                        <div class="author-links">
+                            <a href="https://github.com/unclecode/crawl4ai" target="_blank" title="Crawl4AI on GitHub">
+                                <i class="fas fa-star"></i> 44.9k
+                            </a>
+                            <a href="https://github.com/unclecode/drop_the_damn_link" target="_blank" title="This Project on GitHub">
+                                <i class="fab fa-github"></i> Source
+                            </a>
+                            <a href="https://github.com/unclecode" target="_blank" title="GitHub Profile">
+                                <i class="fab fa-github"></i> @unclecode
+                            </a>
+                            <a href="https://x.com/unclecode" target="_blank" title="X/Twitter Profile">
+                                <i class="fab fa-twitter"></i> @unclecode
+                            </a>
+                        </div>
+                        <p class="tech-info">
+                            Built with <strong>Crawl4AI</strong> for smart metadata extraction.<br>
+                            <small>Planning authentication & cloud database soon™</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="login-form">
+                <h2>Sign In to Start</h2>
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" class="form-control" placeholder="Enter your email">
@@ -26,14 +67,15 @@
             <div class="form-footer">
                 <p>No account? Just enter any email and password to register</p>
             </div>
+            </div>
         </div>
         
         <!-- Main App (initially hidden) -->
         <div id="main-app" style="display: none;">
             <header>
                 <div class="logo">
-                    <i class="fas fa-brain"></i>
-                    <h1>AI Chat Organizer</h1>
+                    <i class="fas fa-link"></i>
+                    <h1>Drop the Damn Link!</h1>
                 </div>
                 
                 <div class="search-bar">
@@ -42,6 +84,9 @@
                 </div>
                 
                 <div class="user-actions">
+                    <button class="btn btn-outline" id="about-btn" title="About this app">
+                        <i class="fas fa-info-circle"></i> About
+                    </button>
                     <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
                         <i class="fas fa-moon" id="theme-icon"></i>
                     </button>
@@ -166,6 +211,86 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" id="cancel-folder-modal">Cancel</button>
                 <button class="btn btn-primary" id="save-folder">Create Folder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- About Modal -->
+    <div class="modal" id="about-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>About Drop the Damn Link!</h3>
+                <button class="btn btn-outline" id="close-about-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="about-modal-content">
+                    <div class="author-section">
+                        <div class="author-avatar">
+                            <img src="https://github.com/unclecode.png" alt="Unclecode" class="avatar-img">
+                        </div>
+                        <div class="author-info-modal">
+                            <h4>Unclecode</h4>
+                            <p>Author of <a href="https://github.com/unclecode/crawl4ai" target="_blank">Crawl4AI</a> ⭐ 44.9k stars</p>
+                            <p>Founder of Kidocode, SE Asia's largest tech & biz school</p>
+                        </div>
+                    </div>
+                    
+                    <div class="app-philosophy">
+                        <h4>🔗 Philosophy</h4>
+                        <p><em>"Drop the damn link, let AI organize it for you!"</em></p>
+                        <p>This AI-assisted bookmark manager is built for the lazy (smart) way to organize your digital life. Just throw your URLs into "All Bookmarks" and don't worry about folders or tags. Later, when you need something, ask the AI to find exactly what you're looking for based on your queries.</p>
+                        <p>Of course, you can still manually organize things if you're into that sort of masochism... but why? 😉</p>
+                    </div>
+                    
+                    <div class="tech-details">
+                        <h4>🛠️ Technical Details</h4>
+                        <p>Built with <strong>Crawl4AI</strong> for intelligent metadata extraction, allowing rich search capabilities across title, description, keywords, and content.</p>
+                        <p><strong>Features:</strong></p>
+                        <ul>
+                            <li>Automatic metadata fetching with rich preview</li>
+                            <li>BM25 search with weighted fields</li>
+                            <li>Condensed HackerNews-style UI</li>
+                            <li>Client-side storage with IndexedDB</li>
+                        </ul>
+                        <p><strong>Coming Soon™:</strong> Authentication & cloud database sync</p>
+                    </div>
+                    
+                    <div class="project-links">
+                        <h4>🔗 Links</h4>
+                        <div class="link-grid">
+                            <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="project-link">
+                                <i class="fas fa-star"></i>
+                                <div>
+                                    <strong>Crawl4AI</strong>
+                                    <span>44.9k stars • Web crawler for LLMs</span>
+                                </div>
+                            </a>
+                            <a href="https://github.com/unclecode/drop_the_damn_link" target="_blank" class="project-link">
+                                <i class="fab fa-github"></i>
+                                <div>
+                                    <strong>This Project</strong>
+                                    <span>Source code & contributions welcome</span>
+                                </div>
+                            </a>
+                            <a href="https://github.com/unclecode" target="_blank" class="project-link">
+                                <i class="fab fa-github"></i>
+                                <div>
+                                    <strong>@unclecode</strong>
+                                    <span>GitHub profile & other projects</span>
+                                </div>
+                            </a>
+                            <a href="https://x.com/unclecode" target="_blank" class="project-link">
+                                <i class="fab fa-twitter"></i>
+                                <div>
+                                    <strong>@unclecode</strong>
+                                    <span>Follow for updates & AI insights</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
