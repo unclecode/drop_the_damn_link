@@ -507,7 +507,7 @@ header {
 
 .action-btn:hover {
     background: var(--primary);
-    color: white;
+    color: var(--bg-primary);
 }
 
 .empty-state {
@@ -778,7 +778,7 @@ header {
 
 .author-links a:hover {
     background: var(--primary);
-    color: white;
+    color: var(--bg-primary);
     transform: translateY(-1px);
 }
 
@@ -1442,7 +1442,7 @@ header {
 
 .mini-tag {
     background: var(--primary);
-    color: white;
+    color: var(--bg-primary);
 }
 
 .mini-keyword {
@@ -1567,7 +1567,7 @@ header {
 
 .project-link:hover {
     background: var(--primary);
-    color: white;
+    color: var(--bg-primary);
     transform: translateY(-2px);
     box-shadow: var(--card-shadow);
 }
@@ -1590,6 +1590,40 @@ header {
 .project-link span {
     font-size: 12px;
     opacity: 0.8;
+}
+
+.onboarding-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+    text-align: center;
+}
+
+.onboarding-section h4 {
+    color: var(--primary);
+    margin-bottom: 12px;
+    font-size: 16px;
+}
+
+.onboarding-section p {
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+#redo-onboarding-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: var(--bg-primary);
+    border: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+#redo-onboarding-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(80, 255, 255, 0.3);
 }
 
 /* Responsive - force card view on mobile */
@@ -1625,5 +1659,452 @@ header {
 
     .link-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================
+   ONBOARDING TOOLTIP SYSTEM STYLES
+   =========================== */
+
+.onboarding-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.onboarding-tooltip {
+    position: fixed;
+    background: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--primary);
+    max-width: 400px;
+    min-width: 300px;
+    z-index: 10001;
+    pointer-events: all;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+}
+
+.onboarding-tooltip.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.onboarding-tooltip .tooltip-header {
+    padding: 15px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.onboarding-tooltip .tooltip-progress {
+    flex: 1;
+    margin-right: 15px;
+}
+
+.onboarding-tooltip .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.onboarding-tooltip .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.onboarding-tooltip .progress-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.onboarding-tooltip .tooltip-skip {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    transition: var(--transition);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.onboarding-tooltip .tooltip-skip:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.onboarding-tooltip .tooltip-content {
+    padding: 20px;
+}
+
+.onboarding-tooltip .tooltip-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.onboarding-tooltip .tooltip-message {
+    color: var(--text-primary);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.onboarding-tooltip .tooltip-actions {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.onboarding-tooltip .tooltip-next,
+.onboarding-tooltip .tooltip-prev {
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.onboarding-tooltip .tooltip-next:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.onboarding-tooltip .tooltip-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.onboarding-tooltip[data-position="bottom"] .tooltip-arrow {
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid var(--primary);
+}
+
+.onboarding-tooltip[data-position="top"] .tooltip-arrow {
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--primary);
+}
+
+.onboarding-tooltip[data-position="left"] .tooltip-arrow {
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-left: 8px solid var(--primary);
+}
+
+.onboarding-tooltip[data-position="right"] .tooltip-arrow {
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid var(--primary);
+}
+
+.onboarding-highlight {
+    outline: 2px solid var(--primary) !important;
+    outline-offset: 2px !important;
+    border-radius: 6px !important;
+    animation: pulse-highlight 2s infinite;
+}
+
+@keyframes pulse-highlight {
+    0%, 100% {
+        outline-color: var(--primary);
+        outline-width: 2px;
+    }
+    50% {
+        outline-color: var(--primary-light);
+        outline-width: 3px;
+    }
+}
+
+/* Step-specific styles */
+.welcome-content {
+    text-align: center;
+}
+
+.logo-showcase {
+    margin-bottom: 25px;
+}
+
+.logo-showcase h3 {
+    color: var(--text-primary);
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+.philosophy-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.feature-highlight {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+}
+
+.feature-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.feature-highlight h4 {
+    margin: 0 0 5px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.feature-highlight p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.demo-setup {
+    text-align: center;
+}
+
+.demo-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    color: var(--primary);
+}
+
+.loading-spinner i {
+    color: var(--primary);
+}
+
+.demo-complete {
+    text-align: center;
+}
+
+.add-bookmark-guide {
+    text-align: center;
+}
+
+.arrow-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.processing-demo {
+    text-align: center;
+}
+
+.demo-url-preview {
+    background: var(--bg-hover);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-family: dm, Monaco, monospace;
+}
+
+.folder-reveal {
+    text-align: center;
+}
+
+.folder-reveal h4 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.folder-reveal ul {
+    text-align: left;
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.search-demo ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.manual-control {
+    text-align: center;
+}
+
+.control-features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+}
+
+.control-item i {
+    color: var(--primary);
+    width: 20px;
+    text-align: center;
+}
+
+.view-modes {
+    text-align: center;
+}
+
+.view-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.view-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.view-option:hover {
+    border-color: var(--primary);
+}
+
+.view-option i {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+.view-option strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.view-option span {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.celebration {
+    text-align: center;
+}
+
+.celebration-content h3 {
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+.achievement-list {
+    text-align: left;
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+.achievement-list li {
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.final-message {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: var(--bg-primary);
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+/* Confetti animation */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: var(--primary);
+    z-index: 10003;
+    animation: confettiFall 3s linear infinite;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Responsive onboarding */
+@media (max-width: 600px) {
+    .onboarding-modal {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .onboarding-content {
+        padding: 20px;
+    }
+    
+    .onboarding-title {
+        font-size: 20px;
+    }
+    
+    .view-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .control-features {
+        text-align: left;
     }
 }

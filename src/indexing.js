@@ -17,11 +17,39 @@ class BM25Search {
     }
 
     tokenize(text) {
-        return text
+        const tokens = text
             .toLowerCase()
-            .replace(/[^\w\s]/g, "")
+            .replace(/[^\w\s]/g, " ")
             .split(/\s+/)
             .filter((token) => token.length > 2);
+        
+        // Add smart n-grams and substring tokens for better matching
+        const smartTokens = new Set(tokens);
+        
+        for (const token of tokens) {
+            // Add 3-grams for partial matching (crawl -> cra, raw, awl)
+            if (token.length >= 4) {
+                for (let i = 0; i <= token.length - 3; i++) {
+                    smartTokens.add(token.substring(i, i + 3));
+                }
+            }
+            
+            // Add 4-grams for better matching (crawl4ai -> craw, rawl, awl4, wl4a, l4ai)
+            if (token.length >= 5) {
+                for (let i = 0; i <= token.length - 4; i++) {
+                    smartTokens.add(token.substring(i, i + 4));
+                }
+            }
+            
+            // Add prefixes (crawl4ai -> craw, crawl, crawl4)
+            if (token.length >= 4) {
+                for (let i = 3; i < token.length; i++) {
+                    smartTokens.add(token.substring(0, i + 1));
+                }
+            }
+        }
+        
+        return Array.from(smartTokens);
     }
 
     async search(query) {
@@ -66,15 +94,55 @@ class BM25Search {
         const docTokens = this.tokenize(doc);
         const docLength = docTokens.length;
         const avgDocLength = this.getAvgDocLength();
+        
+        // Get original text for fuzzy matching
+        const originalText = doc.toLowerCase();
 
         for (const token of tokens) {
-            const tf = docTokens.filter((t) => t === token).length;
-            const idf = this.calculateIDF(token);
-
-            if (idf > 0) {
-                const numerator = tf * (this.k1 + 1);
-                const denominator = tf + this.k1 * (1 - this.b + this.b * (docLength / avgDocLength));
-                score += idf * (numerator / denominator);
+            let tf = 0;
+            let matchWeight = 1.0;
+            
+            // 1. Exact token match (highest weight)
+            const exactMatches = docTokens.filter((t) => t === token).length;
+            if (exactMatches > 0) {
+                tf += exactMatches;
+                matchWeight = 1.0;
+            }
+            
+            // 2. Check for fuzzy/partial matches in original text
+            if (exactMatches === 0 && token.length >= 3) {
+                // Check if query token is contained in any word of original text
+                const words = originalText.split(/\s+/);
+                let fuzzyMatches = 0;
+                
+                for (const word of words) {
+                    if (word.includes(token)) {
+                        fuzzyMatches++;
+                        
+                        // Weight based on how good the match is
+                        if (word.startsWith(token)) {
+                            matchWeight = 0.8; // "crawl" matches "crawl4ai" - good prefix match
+                        } else if (word.endsWith(token)) {
+                            matchWeight = 0.6; // suffix match
+                        } else {
+                            matchWeight = 0.4; // substring match
+                        }
+                    }
+                }
+                
+                if (fuzzyMatches > 0) {
+                    tf += fuzzyMatches * 0.5; // Fuzzy matches count as half
+                }
+            }
+            
+            // 3. Calculate BM25 score with fuzzy weight
+            if (tf > 0) {
+                const idf = this.calculateIDF(token);
+                if (idf > 0) {
+                    const numerator = tf * (this.k1 + 1);
+                    const denominator = tf + this.k1 * (1 - this.b + this.b * (docLength / avgDocLength));
+                    score += (idf * (numerator / denominator)) * matchWeight;
+                }
             }
         }
 
@@ -157,22 +225,45 @@ class BM25Search {
     calculateIDF(token) {
         let docCount = 0;
 
-        // Count bookmarks containing token
+        // Count bookmarks containing token (exact or fuzzy)
         for (const bookmark of this.bookmarks) {
-            const text = this.getDocumentText(bookmark).toLowerCase();
-            if (text.includes(token)) docCount++;
+            if (this.documentContainsToken(bookmark, token)) {
+                docCount++;
+            }
         }
 
-        // Count folders containing token
+        // Count folders containing token (exact or fuzzy)
         for (const folder of this.folders) {
-            const text = this.getDocumentText(folder).toLowerCase();
-            if (text.includes(token)) docCount++;
+            if (this.documentContainsToken(folder, token)) {
+                docCount++;
+            }
         }
 
         const totalDocs = this.bookmarks.length + this.folders.length;
         if (docCount === 0 || totalDocs === 0) return 0;
 
         return Math.log(1 + (totalDocs - docCount + 0.5) / (docCount + 0.5));
+    }
+    
+    /**
+     * Check if document contains token (exact or fuzzy match)
+     */
+    documentContainsToken(item, token) {
+        const text = this.getDocumentText(item).toLowerCase();
+        const docTokens = this.tokenize(text);
+        
+        // 1. Check exact token match first
+        if (docTokens.includes(token)) {
+            return true;
+        }
+        
+        // 2. Check fuzzy match if no exact match
+        if (token.length >= 3) {
+            const words = text.split(/\s+/);
+            return words.some(word => word.includes(token));
+        }
+        
+        return false;
     }
 }
 

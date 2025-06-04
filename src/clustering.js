@@ -335,7 +335,7 @@ class BookmarkClusteringEngine {
     createNewFolder(bookmark, vector) {
         const folder = {
             id: generateUUID(),
-            label: this.generateFolderLabel(bookmark),
+            label: this.generateFolderLabel(),
             centroid: new Map(vector), // Copy the vector
             urls: [{ url: bookmark.url, vector: new Map(vector) }],
             children: []
@@ -349,26 +349,13 @@ class BookmarkClusteringEngine {
     }
 
     /**
-     * Generate a readable label for a folder based on bookmark content
+     * Generate a simple indexed label for a folder
      */
-    generateFolderLabel(bookmark) {
-        // Simple labeling - use domain or first few words of title
-        try {
-            const url = new URL(bookmark.url);
-            let domain = url.hostname.replace(/^www\./, '');
-            
-            // Capitalize first letter
-            domain = domain.charAt(0).toUpperCase() + domain.slice(1);
-            
-            return `${domain} Resources`;
-        } catch (e) {
-            // Fallback to title
-            if (bookmark.title) {
-                const words = bookmark.title.split(' ').slice(0, 3);
-                return words.join(' ') + ' Collection';
-            }
-            return `Cluster ${Date.now()}`;
-        }
+    generateFolderLabel() {
+        // Simple indexed naming: Group 1, Group 2, etc.
+        const leafFolders = this.getLeafFolders();
+        const groupIndex = leafFolders.length + 1;
+        return `Group ${groupIndex}`;
     }
 
     /**

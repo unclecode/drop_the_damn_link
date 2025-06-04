@@ -3,6 +3,7 @@ import { IndexedDBProvider, NaiveAuthProvider } from "./strategies.js";
 import { BM25Search } from "./indexing.js";
 import { MetadataFetcher } from "./metadata-fetcher.js";
 import { BookmarkClusteringEngine } from "./clustering.js";
+import { OnboardingManager } from "./onboarding.js";
 
 // =====================
 // APP CORE
@@ -21,6 +22,7 @@ class AIChatOrganizer {
         this.metadataStatus = new Map(); // Track metadata fetch status
         this.clusteringEngine = new BookmarkClusteringEngine(); // Automatic clustering
         this.useAutoClustering = true; // Enable by default
+        this.onboardingManager = new OnboardingManager(this); // Interactive onboarding
     }
 
     async init() {
@@ -51,6 +53,9 @@ class AIChatOrganizer {
 
             // Load initial data
             await this.loadData();
+
+            // Check if new user needs onboarding
+            await this.checkOnboarding();
         } catch (error) {
             this.showNotification("Error initializing application: " + error.message, "error");
             console.error(error);
@@ -74,6 +79,24 @@ class AIChatOrganizer {
             this.showNotification("Error loading data: " + error.message, "error");
             console.error(error);
         }
+    }
+
+    async checkOnboarding() {
+        // Only check for onboarding if user is authenticated and hasn't seen it before
+        if (!this.onboardingManager.isCompleted() && await this.onboardingManager.shouldShowOnboarding()) {
+            // Small delay to let the UI settle
+            setTimeout(async () => {
+                await this.onboardingManager.start();
+            }, 1000);
+        }
+    }
+
+    startOnboarding() {
+        // Reset completion flag and start onboarding
+        localStorage.removeItem('onboarding_completed');
+        setTimeout(async () => {
+            await this.onboardingManager.start();
+        }, 300);
     }
 
     showLogin() {
@@ -220,6 +243,20 @@ class AIChatOrganizer {
         // Close about modal
         document.getElementById("close-about-modal").addEventListener("click", () => {
             this.hideModal("about-modal");
+        });
+
+        // Redo onboarding button
+        document.getElementById("redo-onboarding-btn").addEventListener("click", () => {
+            this.hideModal("about-modal");
+            this.startOnboarding();
+        });
+
+        // Developer shortcut: Shift+Ctrl+O to trigger onboarding
+        document.addEventListener("keydown", (e) => {
+            if (e.shiftKey && e.ctrlKey && e.key === 'O') {
+                e.preventDefault();
+                this.startOnboarding();
+            }
         });
     }
 
@@ -515,6 +552,17 @@ class AIChatOrganizer {
             if (!this.editingBookmark && !clusterInfo) {
                 this.fetchMetadataForBookmark(savedBookmark);
             }
+
+            // Emit custom event when bookmark is completely processed
+            const bookmarkCompleteEvent = new CustomEvent('bookmarkProcessingComplete', {
+                detail: {
+                    bookmark: savedBookmark,
+                    clusterInfo: clusterInfo,
+                    isNew: !this.editingBookmark
+                }
+            });
+            document.dispatchEvent(bookmarkCompleteEvent);
+            console.log('📢 Event: Bookmark processing complete', savedBookmark.title);
 
             // Reset tags
             this.tags = [];
